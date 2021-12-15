@@ -1,0 +1,38 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+    <title>Vil Timer Test</title>
+    <link rel="stylesheet" type="text/css" href="./style/tk_index.css">
+    <script src="pkg/wasm_exec.js"></script>
+    <script src="pkg/index.js"></script>
+</head>
+
+<body>
+    <div id="timer" class="timer-main">
+        <textarea id="timer_display" rows="5" cols="30"></textarea>
+        <div>
+            <button id="timer_startButton" onclick="startTimer('timer_display')" disabled="true">Start</button>
+
+            <button id="timer_stopButton" onclick="stopTimer('timer_display')" disabled="true">Stop</button>
+
+            <button id="timer_resetButton" onclick="resetTimer('timer_display')" disabled="true">Reset/Resume</button>
+        </div>
+    </div>
+
+    <div id="taskCards" class="taskCards">
+    </div>
+
+    <script>
+        //set constants and perform any page setup here, please.
+        WASM_PATH = "./pkg/wasm_lib.wasm";
+
+        initiateGo(WASM_PATH);
+        document.getElementById("timer_startButton").disabled = false;
+        document.getElementById("timer_stopButton").disabled = false;
+        document.getElementById("timer_resetButton").disabled = false;
+    </script>
+</body>
+
+</html>

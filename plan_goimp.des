@@ -1,0 +1,37 @@
+goimp.wasm
+|
+|---main.go
+|   |
+|   |---function exposures
+|   |---API function declarations (do implement API-Go bindings here)
+|   |   |
+|   |   |---func startTimerAPI(this *js.Value, val []js.Value) //call Go variant with converted values
+|   |   |---func stopTimerAPI(this *js.Value, val []js.Value) //call Go variant with converted values
+|   |   +
+|   |
+|   |---Internal Go code
+|   +   |
+|       |---func GlobalTextAreaWrite(id string, content string) (errcode int) //errcode should inform system whether content is a valid js string, possibly more...
+|       |   |
+|       |   |---js.Global().Call("getElementById", string).Set("value", content)
+|       |   +
+|       |
+|       |---type timer struct
+|       |   |
+|       |   |---millisecondsPassed uint64
+|       |   |---millisecondGoal uint64
+|       |   |---startTime time.Time
+|       |   |---endTime time.Time
+|       |   |---id string
+|       |   +
+|       |   
+|       |---var timers map[string]timer
+|       |
+|       |---func startTimerGo(id string)
+|       |---func stopTimerGo(id string)
+|       |---func updateTimerGo(id string, updateValue_milliseconds uint64)
+|       +
+|
+|---wasm_lib.go //contains implementations for all internal function
+|
++

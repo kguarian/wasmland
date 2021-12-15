@@ -1,0 +1,17 @@
+index.html - main page
+|
+|---<div id="timer" style="style/baw0.css"></div>
+|    |
+|    |---<textarea id="timer_display" style=CODEMIRROR></textarea>
+|    |
+|    |---<button id="timer_startButton"></button>
+|    |---<button id="timer_stopButton"></button>
+|    |---<button id="timer_stopButton"></button>
+|    +
+|
+|---<webassembly id="goimp" src="goimp.wasm">
+|           //This would be SOOO preferred
+|       </webassembly>
+|---<script src="wasm_exec.js">
+|           //Actual Go JS glue code
+|       </script>

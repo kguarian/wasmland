@@ -1,0 +1,353 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+    <title>TK</title>
+    <link rel="stylesheet" type="text/css" href="./style/tk_index.css">
+    <script src="pkg/wasm_exec.js"></script>
+    <script src="pkg/index.js"></script>
+</head>
+
+<body>
+    <div id="timer" class="timer-main">
+        <textarea id="timer_display" rows="5" cols="30"></textarea>
+        <div>
+            <button id="timer_startButton" onclick="startTimer()" disabled="true">Start</button>
+
+            <button id="timer_stopButton" onclick="stopTimer('timer_display')" disabled="true">Stop</button>
+        </div>
+    </div>
+
+    <div id="taskCards" class="taskCards">
+    </div>
+
+    <script>
+        //set constants and perform any page setup here, please.
+        WASM_PATH = "./pkg/wasm_lib.wasm";
+
+        initiateGo(WASM_PATH);
+        document.getElementById("timer_startButton").disabled = false;
+        document.getElementById("timer_stopButton").disabled = false;
+    </script>
+</body>
+
+</html>package main
+
+import (
+	"fmt"
+	"strconv"
+	"syscall/js"
+	"time"
+)
+
+var JS_GLOBAL js.Value = js.Global()
+var display js.Value = JS_GLOBAL.Get("timer_display")
+
+func main() {
+	var lifetime chan JsFunction
+
+	var start, stop JsFunction
+
+	lifetime = make(chan JsFunction)
+
+	start.Init("wasm_startTimer", startTimerAPI)
+	stop.Init("wasm_stopTimer", stopTimerAPI)
+
+	start.Expose(JS_GLOBAL)
+	stop.Expose(JS_GLOBAL)
+
+	updateTimerGo(&timer{id: "timer_display"})
+	display.Set("value", "10.8 - fixing stop")
+	//TODO: The display is your instruction set
+	_ = <-lifetime
+}
+
+//I wanted to place the private API functions in their own files, so these API
+//functions convert, parse, and store input for organized function calls
+func startTimerAPI(this js.Value, val []js.Value) (retVal interface{}) {
+	var id string
+	var duration int
+	var refTime time.Time
+	var inputDuration time.Duration
+	var timr timer
+	var err error
+	if len(val) == 0 {
+		retVal = js.ValueOf(1)
+		return
+	}
+	id = val[0].String()
+	duration, err = strconv.Atoi(val[1].String())
+	if err != nil {
+		retVal = js.ValueOf(2)
+		return
+	}
+	refTime = time.Now()
+	inputDuration = time.Duration(duration) * time.Millisecond
+
+	//"Everything with a space, everything in its space"
+	timr = timer{
+		id:                 id,
+		millisecondsPassed: 0,
+		millisecondGoal:    inputDuration * time.Millisecond,
+		startTime:          refTime,
+		endTime:            refTime.Add(inputDuration),
+		signals:            make(chan byte),
+	}
+
+	Const_timers[timr.id] = &timr
+
+	go startTimerGo(&timr)
+	return
+}
+
+//convert, parse, function call.
+func stopTimerAPI(this js.Value, val []js.Value) (retVal interface{}) {
+	var timr *timer
+	var id string
+	var errorCodeChannel chan byte
+	if len(val) == 0 {
+		retVal = js.ValueOf(1)
+		return
+	}
+	errorCodeChannel = make(chan byte)
+	id = val[0].String()
+	timr = Const_timers[id]
+	if timr == nil {
+		return js.ValueOf(1)
+	}
+	fmt.Println(timr)
+	go stopTimerGo(timr, errorCodeChannel)
+	println(id)
+	return
+}
+package main
+
+import (
+	"fmt"
+	"syscall/js"
+)
+
+//Desired functionality: Ability to position elements relatively and absolutely, insert/add new divs and elements and such, edit innerHTML.
+type Page struct {
+	Title       string
+	Description string
+}
+
+type Widget struct {
+	Tag           string
+	Id            string
+	Type          string
+	Functionality map[string]JsFunction
+	Associations  map[string]string
+	Subs          []*Widget
+}
+
+type JsFunction struct {
+	Name     string
+	Function func(this js.Value, val []js.Value) (i interface{})
+}
+
+var FUNC_TABLE map[string]func(this js.Value, val []js.Value) (i interface{}) = make(map[string]func(this js.Value, val []js.Value) (i interface{}))
+
+func (j *JsFunction) Init(name string, f func(this js.Value, val []js.Value) (i interface{})) {
+	j.Name = name
+	j.Function = f
+}
+
+func (j *JsFunction) Expose(GlobalScope js.Value) {
+	GlobalScope.Set(j.Name, js.FuncOf(j.Function))
+	FUNC_TABLE[j.Name] = j.Function
+}
+
+func (w *Widget) CreateAssociations() (retString string) {
+	// var k string
+	// var v func()
+	// for k, v = range w.Functionality {
+
+	// }
+	return retString
+}
+func (w *Widget) CreateFunctionality() (retString string) {
+	return retString
+}
+
+func (w *Widget) Create() (retString string) {
+	retString = fmt.Sprintf("<%s id=\"%s\" type=\"%s\" %s %s %s></%s>", w.Tag, w.Id, w.Type, w.CreateAssociations(), w.CreateFunctionality())
+	return
+}
+package main
+
+import (
+	"errors"
+	"fmt"
+)
+
+var TASK_CARDS map[string][]*taskCard = make(map[string][]*taskCard)
+
+const TASK_CARD_TEMPLATE = `
+<div id="%s" class="%s">
+        <textarea id="%s" rows="%d" cols="%d"></textarea>
+        <div>
+            <button id="%s" onclick="%s()" disabled="%t">%s</button>
+
+            <button id="%s" onclick="%s()" disabled="%t">%s</button>
+        </div>
+    </div>
+`
+
+//TODO: Choose the one that works better.
+func buildTaskCardTemplate(id, startID, stopID string, rows, cols int, startFunc, endFunc func()) (retstring string) {
+
+	return
+}
+
+type taskCard struct {
+	id   string
+	name string
+	info string
+}
+
+func createInnerHTML(t *taskCard) (innerHTML string, err error) {
+	if t == nil {
+		LAST_ERROR = "taskCard parameter was nil"
+		err = errors.New(LAST_ERROR)
+	}
+	innerHTML = fmt.Sprintf("<%s>", func() {
+		// var v []*taskCard
+		// for _, v = range TASK_CARDS {
+
+		// }
+	})
+	return
+}
+package main
+
+import (
+	"fmt"
+	"syscall/js"
+	"time"
+)
+
+var Const_timers map[string]*timer = make(map[string]*timer)
+
+type timer struct {
+	millisecondsPassed time.Duration
+	millisecondGoal    time.Duration
+	startTime          time.Time
+	endTime            time.Time
+	id                 string
+	//event queue. Church-Turing Thesis: 1 channel can do anything that parallel channels can do, but possibly (and often) slower.
+	//also, this is a reference type, treating like pointer
+	signals chan byte
+}
+
+func startTimerGo(t *timer) (errcode int) {
+	println("startTimerGo()")
+	var i int
+	var usedTimer timer
+	//reference type
+	var synValue byte
+	var processedString string
+	var mapTimerPtr *timer
+
+	// var dur time.Duration
+
+	fmt.Println(t.endTime)
+
+	usedTimer = timer{
+		id:                 t.id,
+		millisecondsPassed: time.Since(t.startTime),
+		millisecondGoal:    time.Until(t.endTime) * time.Millisecond,
+		startTime:          t.startTime,
+		endTime:            t.startTime.Add(time.Millisecond * time.Until(t.endTime)),
+		signals:            make(chan byte),
+	}
+
+	mapTimerPtr = &usedTimer
+
+	Const_timers[t.id] = mapTimerPtr
+
+	for ; time.Now().Before(t.endTime); time.Sleep(time.Millisecond) {
+		// dur = time.Until(t.endTime)
+		JS_GLOBAL.Get("timer_display").Set("value", js.ValueOf(time.Until(t.endTime).String()))
+		// t.mut.Lock()
+		// defer t.mut.Unlock()
+		println(len(mapTimerPtr.signals))
+		if len(mapTimerPtr.signals) != 0 {
+			processedString = fmt.Sprintf("%v (stopped)", time.Until(t.endTime).String())
+			JS_GLOBAL.Get("timer_display").Set("value", js.ValueOf(processedString))
+			synValue = <-mapTimerPtr.signals
+			switch synValue {
+			//stop funcall triggered.
+			case 0:
+				//should finish all other functions involving variables used by the timer and the timer itself, then clear the map association, then return.
+				//Hinge safety on language design. That's the point of Go, right?
+				//LOGIC: Suppose a function is already running and needs a pointer, If it has the pointer, then it's golden.
+				//	If not, then it should nil check and this cleanup should stop this timer's future functionality until the next start API call.
+				//	We should already be done executing the function, so this should be trivial.
+
+				//in an ideal world, this assignment triggers a drop function. Here, we are left at the mercy of the GC about when to deallocate the actual struct.
+				Const_timers[t.id] = nil
+				return
+			default:
+				break
+			}
+		}
+	}
+
+	JS_GLOBAL.Get("timer_display").Set("value", js.ValueOf("Perfection"))
+
+	for i = 0; i < 3; i++ {
+		JS_GLOBAL.Get("timer_display").Set("value", js.ValueOf("Perfection🔥"))
+		time.Sleep(time.Millisecond * time.Duration(333))
+		JS_GLOBAL.Get("timer_display").Set("value", js.ValueOf("Perfection🔥🔥"))
+		time.Sleep(time.Millisecond * time.Duration(333))
+		JS_GLOBAL.Get("timer_display").Set("value", js.ValueOf("Perfection🔥🔥🔥"))
+		time.Sleep(time.Millisecond * time.Duration(334))
+	}
+	return
+}
+func stopTimerGo(timr *timer, ecc chan byte) (errcode int) {
+	println("stopTimerGo()")
+	var callTime time.Time
+
+	callTime = time.Now()
+
+	if timr == nil {
+		fmt.Println("timr == nil")
+		errcode = 1
+		return
+	}
+
+	if timr.endTime.Before(callTime) {
+		fmt.Println("timr.endTime.Before(callTime)")
+		errcode = 2
+		return
+	}
+
+	//timer should be handled via the channel in this stop event.
+	timr.signals <- 0
+	fmt.Printf("passed stop token (0) into channel")
+	return
+}
+
+func StopwatchGo(timr *timer) {
+
+}
+func updateTimerGo(timr *timer) (errcode int) {
+	println("updateTimerGo()")
+	var duration_ms uint64
+
+	JS_GLOBAL.Get(timr.id).Set("value", fmt.Sprintf("%f seconds", float64(duration_ms)/1000))
+	return
+}
+package main
+
+var LAST_ERROR string
+
+var ERROR_CHANNEL chan error
+#timer-main {
+    display: flex;
+    align-items: center;
+}
