@@ -54,10 +54,13 @@ function resetTimer() {
     retVal = wasm_resetTimer(id);
 }
 
-class taskCard {
-    constructor(desiredId, name, info) {
-        this.name = name;
-        this.desiredIdthis.info = info;
+function devconn_ping() {
+    var devid;
+    var userid;
+    var ip;
 
-    }
-};
+    devid = document.getElementById("devid").value;
+    userid = document.getElementById("userid").value;
+    ip = document.getElementById("ip").value;
+    retVal = wasm_devconn_ping(devid, userid, ip)
+}

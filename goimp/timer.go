@@ -52,7 +52,7 @@ func runTimerGo(t *timer) (errcode int) {
 				t.startTime = time.Now()
 				t.endTime = t.startTime.Add(t.millisecondGoal)
 				JS_GLOBAL.Get("timer_display").Set("value", duration.String())
-				//no real need to exit the function, right?
+				//no need to exit the function, right?
 				break
 			default:
 				println("WOAH! This should never happen! FIX IN TIMER.GO")

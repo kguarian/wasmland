@@ -1,4 +1,4 @@
-GOAL: Build a webpage that implementss tokounter functionality.
+GOAL: Build a webpage that implementss token-based counter functionality.
 
 requirements:
 	1)	Styled, centered timer widget contains timer. 0:00:00.000 by default, accurate to the millisecond.

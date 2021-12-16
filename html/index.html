@@ -17,16 +17,21 @@
 
             <button id="timer_stopButton" onclick="stopTimer('timer_display')" disabled="true">Stop</button>
 
-            <button id="timer_resetButton" onclick="resetTimer('timer_display')" disabled="true">Reset/Resume</button>
+            <button id="timer_resetButton" onclick="resetTimer('timer_display')" disabled="true">Reset</button>
         </div>
     </div>
 
-    <div id="taskCards" class="taskCards">
+    <!--QuietBox Test-->
+    <div id="qb-test" class="taskCards">
+        <input id="userid" type="text" placeholder="User ID">
+        <input id="devid" type="text" placeholder="Device Name">
+        <input id="ip" type="text" placeholder="IP">
+        <button id="ping_button" onclick="devconn_ping()">Ping</button>
     </div>
 
     <script>
         //set constants and perform any page setup here, please.
-        WASM_PATH = "./pkg/wasm_lib.wasm";
+        WASM_PATH = "./pkg/wasm_lib.wasm ";
 
         initiateGo(WASM_PATH);
         document.getElementById("timer_startButton").disabled = false;

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"syscall/js"
 	"time"
 )
@@ -14,15 +15,19 @@ func main() {
 
 	var resetTimerAPI_Hook, startTimerAPI_Hook, stopTimerAPI_Hook JsFunction
 
+	var sendPingAPI_Hook JsFunction
+
 	lifetime = make(chan JsFunction)
 
 	startTimerAPI_Hook.Init("wasm_startTimer", startTimerAPI)
 	stopTimerAPI_Hook.Init("wasm_stopTimer", stopTimerAPI)
 	resetTimerAPI_Hook.Init("wasm_resetTimer", resetTimerAPI)
+	sendPingAPI_Hook.Init("wasm_devconn_ping", sendPingAPI)
 
 	startTimerAPI_Hook.Expose(JS_GLOBAL)
 	stopTimerAPI_Hook.Expose(JS_GLOBAL)
 	resetTimerAPI_Hook.Expose(JS_GLOBAL)
+	sendPingAPI_Hook.Expose(JS_GLOBAL)
 
 	display.Set("value", "12.15 - fixed stop")
 	//TODO: The display is your instruction set
@@ -48,6 +53,11 @@ func startTimerAPI(this js.Value, val []js.Value) (retVal interface{}) {
 		return
 	}
 	id = val[0].String()
+
+	if Const_timers[id] != nil && !Const_timers[id].stopped {
+		println("no-op. timer already running.")
+		return
+	}
 	//convert javascript string to a go-usable string
 	duration_asString = val[1].String()
 	//create timer
@@ -123,4 +133,23 @@ func resetTimerAPI(this js.Value, val []js.Value) (retVal interface{}) {
 	resetTimerGo(Const_timers[id])
 	//implies successful reset
 	return js.ValueOf(0)
+}
+
+func sendPingAPI(this js.Value, val []js.Value) (retVal interface{}) {
+	var devid, userid string
+	var ip_addr net.IP
+	if len(val) < 3 {
+		println("empty argument list")
+		return
+	}
+	ip_addr = net.ParseIP(val[2].String())
+	if ip_addr == nil {
+		println("invalid ip address")
+		return
+	}
+
+	devid = val[0].String()
+	userid = val[1].String()
+	go sendPingGo(devid, userid, ip_addr)
+	return
 }
